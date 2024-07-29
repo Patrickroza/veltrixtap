@@ -1,0 +1,48 @@
+pragma solidity ^0.8.0;
+
+contract VeltrixPayment {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Acesso restrito ao proprietário");
+        _;
+    }
+
+    // Estrutura para armazenar informações de pagamento
+    struct Payment {
+        uint amount;
+        uint timestamp;
+        address from;
+        string paymentDetails;
+    }
+
+    // Mapeamento de ID de transação para o pagamento
+    mapping(uint => Payment) public payments;
+    uint public nextPaymentId;
+
+    // Evento para registrar pagamentos
+    event PaymentMade(uint paymentId, address from, uint amount, string details);
+
+    // Função para fazer um pagamento
+    function makePayment(string memory details) public payable {
+        require(msg.value > 0, "O valor deve ser maior que zero");
+
+        payments[nextPaymentId] = Payment(msg.value, block.timestamp, msg.sender, details);
+        emit PaymentMade(nextPaymentId, msg.sender, msg.value, details);
+        nextPaymentId++;
+    }
+
+    // Função para retirar fundos do contrato
+    function withdraw() public onlyOwner {
+        payable(owner).transfer(address(this).balance);
+    }
+
+    // Função para consultar o saldo do contrato
+    function getContractBalance() public view returns (uint) {
+        return address(this).balance;
+    }
+}
